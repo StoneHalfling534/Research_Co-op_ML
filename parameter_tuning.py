@@ -20,7 +20,6 @@ x_train, x_test, y_train, y_test = train_test_split(data, target, test_size = 0.
 x_validate, x_test, y_validate, y_test = train_test_split(x_test, y_test, test_size=0.5)
 np.random.seed(1234)
 
-
 def n_estimators_tuning():
     n_estimators = [1, 2, 4, 8, 16, 32, 64 ,100, 200]
     validation_results = []
@@ -32,6 +31,7 @@ def n_estimators_tuning():
         false_positive_rate, true_positive_rate, thresholds = roc_curve(y_test, y_pred)
         roc_auc = auc(false_positive_rate, true_positive_rate)
         validation_results.append(roc_auc) 
+    plt.plot(n_estimators, validation_results)
     plt.ylabel('AUC Score')
     plt.xlabel('Number of Trees')
     plt.title("Number of Trees vs Performance in Random Forest Algorithm")
@@ -49,12 +49,12 @@ def max_depth_tuning():
         false_positive_rate, true_positive_rate, thresholds = roc_curve(y_test, y_pred)
         roc_auc = auc(false_positive_rate, true_positive_rate)
         validation_results.append(roc_auc)
+    plt.plot(max_depth, validation_results)
     plt.ylabel("AUC Score")
     plt.xlabel("Maximum Tree Depth")
     plt.title("Max Tree Depth vs Performance in Random Forest Algorithm")
     plt.savefig("max_depth.pdf")
     plt.show()
-
 
 def min_sample_split():
     min_sample_split = np.linspace(0.1, 1.0, 10, endpoint=True)
@@ -67,10 +67,9 @@ def min_sample_split():
         false_positive_rate, true_positive_rate, thresholds = roc_curve(y_test, y_pred)
         roc_auc = auc(false_positive_rate, true_positive_rate)
         validation_results.append(roc_auc)
+    plt.plot(min_sample_split, validation_results)
     plt.ylabel("AUC Score")
     plt.xlabel("Minimum Sample Split")
     plt.title("Min Sample Split vs Random Forest Performance")
     plt.savefig('min_sample_split.pdf')
     plt.show()
-
-min_sample_split()
