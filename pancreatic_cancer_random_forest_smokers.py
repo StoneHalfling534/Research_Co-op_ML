@@ -51,7 +51,7 @@ contributions_dataframe = pd.Series(values, index=feature)
 contributions_dataframe = contributions_dataframe.sort_values()
 contributions_dataframe = contributions_dataframe.drop('ID', axis=0)
 all_feat_imp_df = pd.DataFrame(data=[tree.feature_importances_ for tree in clf], columns=data.columns)
-
+all_feat_imp_df = all_feat_imp_df.drop("ID", axis=1)
 def contributions_histogram():
     plt.rcParams['figure.figsize'] = (8.0, 10.0)
     contributions_dataframe.plot(kind = 'barh')
@@ -72,5 +72,4 @@ def violin_plot_feature_importance():
     plot.set(title='Feature Importance Distributions', ylabel='Importance')
     plt.tight_layout
     plt.show()
-#I still need to find a way to remove the ID from the graphs, as that skews the results
     
