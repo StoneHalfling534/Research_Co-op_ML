@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Apr 15 13:39:19 2019
-
 @author: DhruvUpadhyay
 """
 import pandas as pd
@@ -14,6 +13,7 @@ from treeinterpreter import treeinterpreter as ti
 import matplotlib.pyplot as plt
 import numpy as np
 import random
+import seaborn as sns
 
 random.seed(1234)
 np.random.seed(1234)
@@ -44,14 +44,33 @@ feature_mean_dict = {}
 #--------------------------------------------
 for feature in data.columns:
     feature_mean_dict[feature] = np.mean(feature_dict[feature])
-print(sorted(feature_mean_dict.items(), key=lambda x: x[1], reverse=True))
+sorted(feature_mean_dict.items(), key=lambda x: x[1], reverse=True)
 feature = list(feature_mean_dict.keys())
 values = list(feature_mean_dict.values())
 contributions_dataframe = pd.Series(values, index=feature)
 contributions_dataframe = contributions_dataframe.sort_values()
 contributions_dataframe = contributions_dataframe.drop('ID', axis=0)
-plt.rcParams['figure.figsize'] = (8.0, 10.0)
-contributions_dataframe.plot(kind = 'barh')
-plt.title('Feature Contributions for Pancreatic Cancer Risk Model')
-plt.savefig('contributions.png' , bbox_inches='tight')
-plt.savefig('contributions.pdf', bbox_inches='tight')
+all_feat_imp_df = pd.DataFrame(data=[tree.feature_importances_ for tree in clf], columns=data.columns)
+
+def contributions_histogram():
+    plt.rcParams['figure.figsize'] = (8.0, 10.0)
+    contributions_dataframe.plot(kind = 'barh')
+    plt.title('Feature Contributions for Pancreatic Cancer Risk Model')
+    plt.savefig('contributions.png' , bbox_inches='tight')
+    plt.savefig('contributions.pdf', bbox_inches='tight')
+
+def box_plot_feature_importance():
+    plot = sns.boxplot(data=all_feat_imp_df)
+    plot.set_xticklabels(plot.get_xticklabels(), rotation=40, ha="right")
+    plot.set(title='Feature Importance Distributions', ylabel='Importance')
+    plt.tight_layout
+    plt.show()
+    
+def violin_plot_feature_importance():
+    plot = sns.violinplot(data=all_feat_imp_df)
+    plot.set_xticklabels(plot.get_xticklabels(), rotation=40, ha="right")
+    plot.set(title='Feature Importance Distributions', ylabel='Importance')
+    plt.tight_layout
+    plt.show()
+#I still need to find a way to remove the ID from the graphs, as that skews the results
+    
