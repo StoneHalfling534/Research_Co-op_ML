@@ -11,8 +11,7 @@ from sklearn.preprocessing import StandardScaler
 import seaborn as sns
 import random
 import numpy as np
-from matplotlib.colors import ListedColorMap
-
+import matplotlib.pyplot as plt
 
 random.seed(1234)
 np.random.seed(1234)
@@ -36,8 +35,21 @@ x_validate_std = sc.transform(x_validate)
 logreg = LogisticRegression(C=1000.0, random_state=42)
 
 logreg.fit(x_train_std, y_train)
+odds_ratios = np.exp(logreg.coef_)
+odds_ratios = odds_ratios[0]
+odd_ratios = np.resize(odds_ratios, ((odds_ratios.size), 1))
+print(odds_ratios)
+contributions_dataframe = pd.DataFrame({'sex (0:female, 1:male)': odds_ratios[1], 'age':odds_ratios[2], 'smoker': odds_ratios[3], 'family': odds_ratios[4],'rs13303010_G': odds_ratios[5],'rs12615966_T': odds_ratios[6], 'rs657152_A': odds_ratios[7],'rs9564966_A': odds_ratios[8],'rs16986825_T': odds_ratios[9]}, index=0)
+data_headings = ['ID', 'sex (0:female, 1:male)', 'age', 'smoker (0: no, 1: yes)', 
+                 'family (0: no, 1: yes)', 'rs13303010_G', 'rs12615966_T', 'rs657152_A'
+                 'rs9564966_A', 'rs16986825_T']
+
 y_pred = logreg.predict(x_validate)
 accuracy = accuracy_score(y_validate, y_pred)
 cnf_matrix = confusion_matrix(y_test, y_pred)
-print(accuracy)
-print(cnf_matrix)
+plt.rcParams['figure.figsize'] = (8.0, 10.0)
+contributions_dataframe.plot(kind='barh')
+plt.title('Odds Ratios for Each Feature')
+plt.xlabel('Features')
+plt.ylabel('Odds Ratio')
+plt.show()
