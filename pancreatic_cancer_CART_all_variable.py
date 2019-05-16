@@ -30,7 +30,20 @@ y_pred = clf.predict(x_test)
 clf_accuracy = accuracy_score(y_test, y_pred)
 false_positive_rate, true_positive_rate, thresholds = roc_curve(y_test, y_pred)
 
-def individual_contributions:
+features=[
+        'case (1: case, 0: control)',
+        'sex (0:female, 1: male)',
+        'age',
+        'smoker (0: no, 1: yes)',
+        'family (0: no, 1: yes)',
+        'rs13303010_G',
+        'rs12615966_T',
+        'rs657152_A',
+        'rs9564966_A',
+        'rs16986825_T'
+        ]
+
+def individual_contributions():
     clf_pred, clf_bias, contributions = ti.predict(clf, x_test)
     #The code below was taken from DataDive's treeinterpreter tutorial. 
     #--------------------------------------------
@@ -53,16 +66,31 @@ def individual_contributions:
     all_feat_imp_df = all_feat_imp_df.drop("ID", axis=1)
     return all_feat_imp_df
 
-def create_ordered_joint_contributions(contributions):
-    clf_pred, clf_bias, contributions = ti.predict(clf, x_test, joint_contribution=True)
-    feature_contrib = pd.DataFrame(contributions, columns=['feature interaction', 'contribution'])
-    new_idx = (feature_contrib.contribution.abs()
-    .sort_values(inplace=False, ascending=False)
-    .index)
-    feature_contrib = feature_contrib.reindex(new_idx).reset_index(drop=True)
-    return feature_contrib
+clf_pred, clf_bias, contributions = ti.predict(clf, x_test, joint_contribution=True)
 
-print(create_ordered_joint_contributions(contributions))
+def create_ordered_joint_contributions(contrib):
+    df = pd.DataFrame(contrib, columns=['feature_interaction', 'contribution'])
+    # get the reordered index    
+    new_idx = (df.contribution.abs().index)
+    df = df.reindex(new_idx).reset_index(drop=True)
+    return df
+
+feat_names = []
+
+for obs in contributions:
+    obs_contrib=[]
+    
+    for k in obs.keys():
+        feature_combo = [features[i] for i in k]
+        contrib = obs[k]
+        obs_contrib.append([feature_combo, contrib])
+    feat_names.append(obs_contrib)
+joint_contrib_df = [create_ordered_joint_contributions(contrib) for contrib in feat_names]
+joint_contrib_df['feat_interaction'] = df.feature_interaction.apply(' | '.join)
+
+print(joint_contrib_df)
+            
+#print(list(contributions[0].keys())[:3])
 
 def contributions_histogram():
     plt.rcParams['figure.figsize'] = (8.0, 10.0)
@@ -86,4 +114,3 @@ def violin_plot_feature_importance():
     plt.tight_layout
     plt.savefig('violinplot_randomforest.pdf')
     plt.show()
-    
