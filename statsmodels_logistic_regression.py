@@ -4,19 +4,19 @@ Created on Mon May  6 12:42:39 2019
 
 @author: DhruvUpadhyay
 """
-
 import pandas as pd
 import matplotlib.pyplot as plt
 import statsmodels.formula.api as sm
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 import numpy as np
+from pdpbox import pdp
 import random
 import seaborn as sns
 
 np.random.seed(42)
 random.seed(42)
-data = pd.read_csv('pancreatic_cancer_smokers.csv')
+data = pd.read_csv('pancreatic_cancer_smokers_good.csv')
 features = list(data.columns)
 features.remove('case (1: case, 0: control)')
 features.reverse()
@@ -35,10 +35,7 @@ params = result.params
 conf = result.conf_int()
 conf['OR'] = params
 conf.columns = ['2.5%', "97.5%", "OR"]
-
-
 conf = np.exp(conf)
-
 odds_ratios_95 = conf['OR']
 odds_ratios_low = conf['2.5%']
 odds_ratios_high = conf['97.5%']
@@ -51,7 +48,9 @@ for i in range(len(odds_ratios_low)):
 
 asymmetric_error = [low_diff, high_diff]
 
-    
+#y_pred = model.predict(x_test)
+#print(accuracy_score(y_test, y_pred))
+
 def plot_hist():
     plt.rcParams['figure.figsize'] = (8.0, 10.0)   
     conf['OR'].plot(kind='barh')
@@ -70,4 +69,12 @@ def violin_plot():
     plt.savefig('violinplot_OR.pdf')
     plt.show()
 
+def two_way_plot_pdp(feats, clusters=None, feat_name=None):
+    #feats = ['family (0: no, 1: yes)', 'smoker (0: no, 1: yes)']
+    feat_name = feat_name or feats
+    p = pdp.pdp_interact(model, x_train, features=feats, model_features=x_train.columns)
+    graph = pdp.pdp_interact_plot(p, feats)
+    pdp.plot.savefig('pdp.png', dpi=200)
+    return graph
+ 
 plot_hist()
