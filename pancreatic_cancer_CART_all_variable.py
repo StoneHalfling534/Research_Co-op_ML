@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Apr 15 13:39:19 2019
-@author: DhruvUpadhyay
+@author: Dhruv Upadhyay
 """
 import pandas as pd
 from sklearn.metrics import accuracy_score
@@ -11,27 +11,33 @@ from sklearn.metrics import confusion_matrix, roc_curve, auc
 from sklearn.ensemble import RandomForestClassifier 
 from treeinterpreter import treeinterpreter as ti, utils
 import matplotlib.pyplot as plt
+from matplotlib.colorbar import ColorbarBase
+from pdpbox import pdp
+from plotnine import *
+#from mpl_toolkit.axes_grid1 import make_axes_locatable
 import numpy as np
 import random
 import seaborn as sns
 
 random.seed(1234)
 np.random.seed(1234)
-data = pd.read_csv("pancreatic_cancer_smokers.csv")
+data = pd.read_csv("pancreatic_cancer_smokers_good.csv")
 target = data['case (1: case, 0: control)']
 data.drop('case (1: case, 0: control)', axis=1, inplace=True)
 x_train, x_test, y_train, y_test = train_test_split(data, target, test_size = 0.2)
 x_validate, x_test, y_validate, y_test = train_test_split(x_test, y_test, test_size=0.5)
 clf = RandomForestClassifier(n_estimators=60, max_depth=4, min_samples_split=0.01)
 clf.fit(x_train, y_train)
+#print(x_train.columns)
+y_pred = clf.predict(x_validate)
 
-y_pred = clf.predict(x_test)
+clf_accuracy = accuracy_score(y_validate, y_pred)
+print(clf_accuracy)
 
-clf_accuracy = accuracy_score(y_test, y_pred)
-false_positive_rate, true_positive_rate, thresholds = roc_curve(y_test, y_pred)
+#false_positive_rate, true_positive_rate, thresholds = roc_curve(y_test, y_pred)
 
 features=[
-        'case (1: case, 0: control)',
+        'ID',
         'sex (0:female, 1: male)',
         'age',
         'smoker (0: no, 1: yes)',
@@ -62,45 +68,19 @@ def individual_contributions():
     contributions_dataframe = pd.Series(values, index=feature)
     contributions_dataframe = contributions_dataframe.sort_values()
     contributions_dataframe = contributions_dataframe.drop('ID', axis=0)
-    all_feat_imp_df = pd.DataFrame(data=[tree.feature_importances_ for tree in clf], columns=data.columns)
-    all_feat_imp_df = all_feat_imp_df.drop("ID", axis=1)
-    return all_feat_imp_df
+    return contributions_dataframe
 
-clf_pred, clf_bias, contributions = ti.predict(clf, x_test, joint_contribution=True)
-
-def create_ordered_joint_contributions(contrib):
-    df = pd.DataFrame(contrib, columns=['feature_interaction', 'contribution'])
-    # get the reordered index    
-    new_idx = (df.contribution.abs().index)
-    df = df.reindex(new_idx).reset_index(drop=True)
-    return df
-
-feat_names = []
-
-for obs in contributions:
-    obs_contrib=[]
-    
-    for k in obs.keys():
-        feature_combo = [features[i] for i in k]
-        contrib = obs[k]
-        obs_contrib.append([feature_combo, contrib])
-    feat_names.append(obs_contrib)
-joint_contrib_df = [create_ordered_joint_contributions(contrib) for contrib in feat_names]
-joint_contrib_df['feat_interaction'] = df.feature_interaction.apply(' | '.join)
-
-print(joint_contrib_df)
-            
-#print(list(contributions[0].keys())[:3])
-
-def contributions_histogram():
+def contributions_histogram(contributions_dataframe):
     plt.rcParams['figure.figsize'] = (8.0, 10.0)
     contributions_dataframe.plot(kind = 'barh')
     plt.title('Feature Contributions for Pancreatic Cancer Risk Model')
+    #plt.xscale('log')
     plt.savefig('contributions.png' , bbox_inches='tight')
     plt.savefig('contributions.pdf', bbox_inches='tight')
+    plt.show()
 
 def box_plot_feature_importance():
-    plot = sns.boxplot(data=all_feat_imp_df)
+    plot = sns.boxplot(data=individual_contributions()[1])
     plot.set_xticklabels(plot.get_xticklabels(), rotation=40, ha="right")
     plot.set(title='Feature Importance Distributions', ylabel='Importance')
     plt.tight_layout
@@ -108,9 +88,20 @@ def box_plot_feature_importance():
     plt.show()
     
 def violin_plot_feature_importance():
-    plot = sns.violinplot(data=all_feat_imp_df)
+    plot = sns.violinplot(data=individual_contributions()[1])
     plot.set_xticklabels(plot.get_xticklabels(), rotation=40, ha="right")
     plot.set(title='Feature Importance Distributions', ylabel='Importance')
     plt.tight_layout
     plt.savefig('violinplot_randomforest.pdf')
     plt.show()
+    
+def two_way_plot_pdp(feats, clusters=None, feat_name=None):
+    #feats = ['family (0: no, 1: yes)', 'smoker (0: no, 1: yes)']
+    feat_name = feat_name or feats
+    p = pdp.pdp_interact(clf, x_train, features=feats, model_features=x_train.columns)
+    graph = pdp.pdp_interact_plot(p, feats)
+    pdp.plot.savefig('pdp.png', dpi=200)
+    return graph
+ 
+contributions_histogram(individual_contributions())
+#two_way_plot_pdp(['smoker (0: no, 1: yes)','sex (0:female, 1: male)'])
