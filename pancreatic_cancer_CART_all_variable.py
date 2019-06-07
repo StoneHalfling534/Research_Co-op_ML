@@ -9,7 +9,7 @@ from sklearn.model_selection import train_test_split
 from sklearn import preprocessing
 from sklearn.metrics import confusion_matrix, roc_curve, auc
 from sklearn.ensemble import RandomForestClassifier 
-from treeinterpreter import treeinterpreter as ti, utils
+#from treeinterpreter import treeinterpreter as ti, utils
 import matplotlib.pyplot as plt
 from matplotlib.colorbar import ColorbarBase
 from pdpbox import pdp
@@ -18,6 +18,7 @@ from plotnine import *
 import numpy as np
 import random
 import seaborn as sns
+from sklearn.utils.multiclass import unique_labels
 
 random.seed(1234)
 np.random.seed(1234)
@@ -29,7 +30,7 @@ x_validate, x_test, y_validate, y_test = train_test_split(x_test, y_test, test_s
 clf = RandomForestClassifier(n_estimators=60, max_depth=4, min_samples_split=0.01)
 clf.fit(x_train, y_train)
 #print(x_train.columns)
-y_pred = clf.predict(x_validate)
+y_pred = clf.predict(x_test)
 
 clf_accuracy = accuracy_score(y_validate, y_pred)
 print(clf_accuracy)
@@ -48,6 +49,14 @@ features=[
         'rs9564966_A',
         'rs16986825_T'
         ]
+cm = confusion_matrix(y_test, y_pred)
+df_cm = pd.DataFrame(cm, index = [i for i in "AB"],
+                  columns = [i for i in "AB"])
+plt.figure(figsize=(10,7))
+ax = plt.axes()
+sns.heatmap(df_cm, annot=True)
+ax.set_title("Confusion Matrix for Random Forest Model")
+plt.show()
 
 def individual_contributions():
     clf_pred, clf_bias, contributions = ti.predict(clf, x_test)
@@ -72,7 +81,7 @@ def individual_contributions():
 
 def contributions_histogram(contributions_dataframe):
     plt.rcParams['figure.figsize'] = (8.0, 10.0)
-    contributions_dataframe.plot(kind = 'barh')
+    contributions_dataframe.plot(kind = 'barh', color=(0.2, 0.4, 0.6, 0.6))
     plt.title('Feature Contributions for Pancreatic Cancer Risk Model')
     #plt.xscale('log')
     plt.savefig('contributions.png' , bbox_inches='tight')
@@ -102,6 +111,5 @@ def two_way_plot_pdp(feats, clusters=None, feat_name=None):
     graph = pdp.pdp_interact_plot(p, feats)
     pdp.plot.savefig('pdp.png', dpi=200)
     return graph
- 
+
 contributions_histogram(individual_contributions())
-#two_way_plot_pdp(['smoker (0: no, 1: yes)','sex (0:female, 1: male)'])
