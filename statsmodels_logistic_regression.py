@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 import statsmodels.formula.api as sm
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
 import numpy as np
-from pdpbox import pdp
 import random
 import seaborn as sns
 
@@ -42,18 +42,23 @@ odds_ratios_high = conf['97.5%']
 low_diff = []
 high_diff = []
 
+cm = confusion_matrix(y_test, y_pred)
+df_cm = pd.DataFrame(cm, index = [i for i in "AB"],
+                  columns = [i for i in "AB"])
+plt.figure(figsize=(10,7))
+ax = plt.axes()
+sns.heatmap(df_cm, annot=True)
+ax.set_title("Confusion Matrix for Logistic Regression Model")
+plt.show()
 for i in range(len(odds_ratios_low)):
     low_diff.append(odds_ratios_95[i]-odds_ratios_low[i])
     high_diff.append(odds_ratios_high[i]-odds_ratios_95[i])
 
 asymmetric_error = [low_diff, high_diff]
 
-#y_pred = model.predict(x_test)
-#print(accuracy_score(y_test, y_pred))
-
 def plot_hist():
     plt.rcParams['figure.figsize'] = (8.0, 10.0)   
-    conf['OR'].plot(kind='barh')
+    conf['OR'].plot(kind='barh', color=(0.2, 0.4, 0.6, 0.6))
     plt.title('Odds Ratios for Pancreatic Cancer Data')
     plt.errorbar(y=features, x=odds_ratios_95, xerr = asymmetric_error, ls = 'none')
     plt.xlabel('Odds Ratios')
@@ -61,20 +66,4 @@ def plot_hist():
     plt.savefig('odds_ratios.pdf')
     plt.show()
    
-def violin_plot():
-    plot = sns.violinplot(data=params)
-    plot.set_xticklabels(plot.get_xticklabels(), rotation=40, ha="right")
-    plot.set(title='Odds Ratios', xlabels='features', ylabel='Odds Ratios')
-    plt.tight_layout
-    plt.savefig('violinplot_OR.pdf')
-    plt.show()
-
-def two_way_plot_pdp(feats, clusters=None, feat_name=None):
-    #feats = ['family (0: no, 1: yes)', 'smoker (0: no, 1: yes)']
-    feat_name = feat_name or feats
-    p = pdp.pdp_interact(model, x_train, features=feats, model_features=x_train.columns)
-    graph = pdp.pdp_interact_plot(p, feats)
-    pdp.plot.savefig('pdp.png', dpi=200)
-    return graph
- 
 plot_hist()
